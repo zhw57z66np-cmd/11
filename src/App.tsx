@@ -9,7 +9,7 @@ import ParentDetail from './pages/ParentDetail'
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/11">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/kid" element={<KidHome />} />
