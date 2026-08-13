@@ -13,6 +13,7 @@ export type QuestionType =
   | 'word_form'
   | 'dictionary'
   | 'image_write'
+  | 'handwriting'
 
 // 单道题目
 export interface Question {
@@ -60,6 +61,19 @@ export interface VocabItem {
   radical?: string
   meanings: string[]
   examples: string[]
+}
+
+// 汉字详情 (用于田字格学习)
+export interface HanziDetail {
+  char: string
+  pinyin: string
+  strokeCount: number
+  structure: string
+  radical: string
+  meanings: string[]
+  examples: string[]
+  strokeOrder: string[]
+  strokes?: string[]  // SVG path 数组 (viewBox 0 0 100 100)
 }
 
 // 学习进度

@@ -1,18 +1,29 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { lessons } from '../data/lessons'
 import { questions } from '../data/questions'
+import { getHanziDetail } from '../data/hanziData'
 import { useProgressStore } from '../store/useProgressStore'
-import { useEffect } from 'react'
+import HanziDetailModal from '../components/kid/HanziDetailModal'
+import type { HanziDetail, VocabItem } from '../types'
+import { useEffect, useState } from 'react'
 
 export default function StudyPage() {
   const { lessonId } = useParams()
   const navigate = useNavigate()
   const lesson = lessons.find(l => l.id === lessonId)
   const updateStudyProgress = useProgressStore(s => s.updateStudyProgress)
+  const [activeHanzi, setActiveHanzi] = useState<HanziDetail | null>(null)
 
   useEffect(() => {
     if (lessonId) updateStudyProgress(lessonId)
   }, [lessonId, updateStudyProgress])
+
+  // 点击生字打开详情 (有笔画数据或基础信息则展示)
+  const openHanzi = (v: VocabItem) => {
+    const detail = getHanziDetail(v.character)
+    if (!detail) return
+    setActiveHanzi(detail)
+  }
 
   if (!lesson) {
     return (
@@ -114,28 +125,48 @@ export default function StudyPage() {
               </span>
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {lesson.vocabulary.map((v, vi) => (
-                <div key={v.character} 
-                  className="rounded-[var(--r-md)] p-3 border transition-all hover:shadow-sm"
-                  style={{ 
-                    borderColor: 'var(--border-default)',
-                    background: 'var(--bg-subtle)',
-                    animationDelay: `${vi * 0.05}s`
-                  }}>
-                  <div className="text-[28px] font-bold text-center mb-0.5 leading-tight" style={{ color: 'var(--n-800)' }}>
-                    {v.character}
-                  </div>
-                  <div className="text-[12px] text-center font-semibold mb-1.5" style={{ color: 'var(--primary-500)' }}>
-                    {v.pinyin}
-                  </div>
-                  <div className="text-[11px] text-center leading-snug" style={{ color: 'var(--n-500)' }}>
-                    {v.meanings.join('、')}
-                  </div>
-                  <div className="text-[10px] text-center mt-1.5 pt-1.5" style={{ color: 'var(--n-400)', borderTop: '1px dashed var(--border-default)' }}>
-                    组词：{v.examples.join('、')}
-                  </div>
-                </div>
-              ))}
+              {lesson.vocabulary.map((v, vi) => {
+                const hasDetail = !!getHanziDetail(v.character)
+                return (
+                  <button
+                    key={v.character}
+                    onClick={() => openHanzi(v)}
+                    disabled={!hasDetail}
+                    className="rounded-[var(--r-md)] p-3 border transition-all hover:shadow-sm text-left w-full btn-press disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ 
+                      borderColor: hasDetail ? 'var(--border-default)' : 'var(--border-default)',
+                      background: hasDetail ? 'var(--bg-card)' : 'var(--bg-muted)',
+                      animationDelay: `${vi * 0.05}s`
+                    }}>
+                    <div className="flex items-start justify-between">
+                      <div className="text-[30px] font-bold leading-tight" style={{ color: 'var(--n-800)', fontFamily: '"KaiTi","STKaiti","楷体",serif' }}>
+                        {v.character}
+                      </div>
+                      {hasDetail && (
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-[4px]"
+                          style={{ background: 'var(--primary-50)', color: 'var(--primary-500)' }}>
+                          点开
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[12px] text-center font-semibold mb-1.5" style={{ color: 'var(--primary-500)' }}>
+                      {v.pinyin}
+                    </div>
+                    <div className="text-[11px] text-center leading-snug" style={{ color: 'var(--n-500)' }}>
+                      {v.meanings.join('、')}
+                    </div>
+                    <div className="text-[10px] text-center mt-1.5 pt-1.5" style={{ color: 'var(--n-400)', borderTop: '1px dashed var(--border-default)' }}>
+                      组词：{v.examples.join('、')}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mt-3 text-[11px] flex items-center gap-1.5" style={{ color: 'var(--n-400)' }}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M8 3v10M3 8h10"/>
+              </svg>
+              点击汉字卡片，可学习田字格书写、笔顺、结构、发音
             </div>
           </div>
         )}
@@ -226,6 +257,11 @@ export default function StudyPage() {
           </div>
         )}
       </main>
+
+      {/* 汉字详情弹窗 */}
+      {activeHanzi && (
+        <HanziDetailModal hanzi={activeHanzi} onClose={() => setActiveHanzi(null)} />
+      )}
     </div>
   )
 }

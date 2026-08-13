@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Question } from '../../types'
+import { getHanziDetail } from '../../data/hanziData'
+import TianGe from './TianGe'
 
 interface QuizQuestionProps {
   question: Question
@@ -21,16 +23,24 @@ const typeLabels: Record<string, string> = {
   word_form: '组词',
   character_pinyin: '生字注音',
   match: '连线匹配',
+  handwriting: '田字格书写',
 }
 
 export default function QuizQuestion({
   question, userAnswer, onAnswer, showResult, isCorrect, showHint, disabled,
 }: QuizQuestionProps) {
   const [inputValue, setInputValue] = useState(userAnswer)
+  const [hasInk, setHasInk] = useState(false)
 
+  // 输入框同步 userAnswer (从答案卡/上一题返回时)
   useEffect(() => {
     setInputValue(userAnswer)
   }, [userAnswer, question.id])
+
+  // 切换题目时重置田字格状态
+  useEffect(() => {
+    setHasInk(false)
+  }, [question.id])
 
   const handleInputChange = (val: string) => {
     if (disabled) return
@@ -40,8 +50,79 @@ export default function QuizQuestion({
 
   const inputBaseStyle = `w-full px-4 py-3 text-[15px] border-2 rounded-[var(--r-md)] outline-none transition-colors`
 
+  // 用 ref 保存最新的 onAnswer, 使 handleInkChange 引用完全稳定 (避免父组件内联回调导致无限循环)
+  const onAnswerRef = useRef(onAnswer)
+  onAnswerRef.current = onAnswer
+
+  // 田字格书写回调 (稳定引用, 避免无限循环)
+  const handleInkChange = useCallback((ink: boolean) => {
+    setHasInk(ink)
+    if (ink) {
+      // 有笔迹即视为已作答
+      const targetChar = String(question.answer).trim()
+      onAnswerRef.current(targetChar)
+    } else {
+      onAnswerRef.current('')
+    }
+  }, [question.answer])
+
   const renderQuestion = () => {
     switch (question.type) {
+      case 'handwriting': {
+        // 根据题目目标字展示田字格听写 (answer 为目标字)
+        const targetChar = String(question.answer).trim()
+        const detail = getHanziDetail(targetChar)
+
+        if (!detail) {
+          return (
+            <div className="space-y-3">
+              <p className="text-[15px] font-medium" style={{ color: 'var(--n-700)' }}>
+                {question.prompt}
+              </p>
+              <p className="text-[13px] text-center py-4 rounded-[var(--r-sm)]"
+                style={{ background: 'var(--warning-50)', color: 'var(--warning-600)' }}>
+                该字暂未收录笔画数据，请直接输入：{targetChar}
+              </p>
+              <input
+                type="text"
+                value={inputValue}
+                onChange={e => handleInputChange(e.target.value)}
+                placeholder="请输入该字..."
+                disabled={disabled}
+                className={inputBaseStyle}
+                style={{ borderColor: 'var(--border-default)', background: 'var(--bg-card)' }}
+              />
+            </div>
+          )
+        }
+
+        return (
+          <div className="space-y-3">
+            <p className="text-[15px] font-medium leading-relaxed" style={{ color: 'var(--n-700)' }}>
+              {question.prompt}
+            </p>
+            <p className="text-[20px] font-bold text-center" style={{ color: 'var(--primary-500)' }}>
+              {detail.pinyin}
+            </p>
+            <p className="text-[12px] text-center" style={{ color: 'var(--n-400)' }}>
+              请在下方田字格中书写"{targetChar}"
+            </p>
+            <div className="flex justify-center py-2">
+              <TianGe
+                hanzi={detail}
+                mode="exam"
+                showGuide={false}
+                size={220}
+                disabled={disabled}
+                onWriteChange={handleInkChange}
+              />
+            </div>
+            <p className="text-[11px] text-center" style={{ color: hasInk ? 'var(--success-600)' : 'var(--n-400)' }}>
+              {hasInk ? '✓ 已书写，可提交答案' : '请在田字格中书写后提交'}
+            </p>
+          </div>
+        )
+      }
       case 'match': {
         const answerObj = typeof question.answer === 'object' && !Array.isArray(question.answer)
           ? question.answer as Record<string, string>
