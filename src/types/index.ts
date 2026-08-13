@@ -74,6 +74,14 @@ export interface ProgressRecord {
   wrongQuestions: string[]
 }
 
+// 孩子档案
+export interface ChildProfile {
+  id: string
+  name: string
+  avatar: number // 0-5 对应不同预设头像
+  createdAt: string
+}
+
 // 考试记录
 export interface ExamRecord {
   id: string

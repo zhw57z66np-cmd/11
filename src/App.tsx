@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
+import ChildProfilePage from './pages/ChildProfilePage'
 import KidHome from './pages/KidHome'
 import StudyPage from './pages/StudyPage'
 import PracticePage from './pages/PracticePage'
@@ -12,6 +13,8 @@ function App() {
     <HashRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/add-child" element={<ChildProfilePage />} />
+        <Route path="/edit-child/:childId" element={<ChildProfilePage />} />
         <Route path="/kid" element={<KidHome />} />
         <Route path="/kid/study/:lessonId" element={<StudyPage />} />
         <Route path="/kid/practice/:lessonId" element={<PracticePage />} />

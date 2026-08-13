@@ -3,11 +3,14 @@ import { units, lessons } from '../data/lessons'
 import LessonCard from '../components/kid/LessonCard'
 import { useProgressStore } from '../store/useProgressStore'
 import { useAuthStore } from '../store/useAuthStore'
+import { useChildStore } from '../store/useChildStore'
+import ChildAvatar from '../components/common/ChildAvatar'
 
 export default function KidHome() {
   const navigate = useNavigate()
   const clearRole = useAuthStore(s => s.clearRole)
   const records = useProgressStore(s => s.records)
+  const currentChild = useChildStore(s => s.children.find(c => c.id === s.currentChildId))
   
   const getUnitProgress = (unitId: string) => {
     const unit = units.find(u => u.id === unitId)
@@ -46,15 +49,11 @@ export default function KidHome() {
           </button>
           
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-[8px] flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, var(--primary-500), var(--primary-400))' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-                <path d="M4 6C4 4.9 4.9 4 6 4H12C13.1 4 14 4.9 14 6V18C14 19.1 13.1 18 12 18H6C4.9 18 4 17.1 4 16V6Z"/>
-                <path d="M14 8H16C17.1 8 18 8.9 18 10V16C18 17.1 17.1 18 16 18H14"/>
-              </svg>
-            </div>
-            <h1 className="text-[16px] font-bold" style={{ color: 'var(--n-700)' }}>
-              语文乐园
+            {currentChild && (
+              <ChildAvatar avatar={currentChild.avatar} size="sm" />
+            )}
+            <h1 className="text-[15px] font-bold" style={{ color: 'var(--n-700)' }}>
+              {currentChild?.name || '语文乐园'}
             </h1>
           </div>
           
@@ -79,13 +78,15 @@ export default function KidHome() {
             background: 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 60%, var(--primary-300) 100%)',
             boxShadow: '0 4px 20px rgba(242, 129, 26, 0.25)'
           }}>
-          <div className="relative z-10">
-            <h2 className="text-[20px] font-extrabold text-white mb-1">
-              你好，小朋友！
-            </h2>
-            <p className="text-[13px] text-white/75">
-              今天想学哪一课呢？
-            </p>
+          <div className="relative z-10 flex items-center gap-3">
+            <div>
+              <h2 className="text-[20px] font-extrabold text-white mb-1">
+                你好，{currentChild?.name || '小朋友'}！
+              </h2>
+              <p className="text-[13px] text-white/75">
+                今天想学哪一课呢？
+              </p>
+            </div>
           </div>
           {/* 装饰 */}
           <div className="absolute -right-3 -top-3 w-20 h-20 rounded-full opacity-[0.12]"

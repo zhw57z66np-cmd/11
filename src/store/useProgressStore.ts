@@ -3,10 +3,18 @@ import type { ProgressRecord, ExamRecord } from '../types'
 import { storage } from '../utils/storage'
 import { getMasteryLevel } from '../utils/scoring'
 import { units } from '../data/lessons'
+import { useChildStore } from './useChildStore'
+
+// 获取当前孩子的存储 key
+function getChildKey(prefix: string) {
+  const childId = useChildStore.getState().currentChildId
+  return childId ? `${prefix}_${childId}` : `${prefix}_default`
+}
 
 interface ProgressState {
   records: Record<string, ProgressRecord>
   examRecords: ExamRecord[]
+  loadChildData: () => void
   updateStudyProgress: (lessonId: string) => void
   updatePracticeResult: (lessonId: string, questionId: string, isCorrect: boolean) => void
   saveExamRecord: (record: ExamRecord) => void
@@ -16,8 +24,14 @@ interface ProgressState {
 }
 
 export const useProgressStore = create<ProgressState>((set, get) => ({
-  records: storage.get('progress_records', {}),
-  examRecords: storage.get('exam_records', []),
+  records: {},
+  examRecords: [],
+
+  loadChildData: () => {
+    const records = storage.get(getChildKey('progress'), {})
+    const examRecords = storage.get(getChildKey('exam'), [])
+    set({ records, examRecords })
+  },
 
   updateStudyProgress: (lessonId: string) => {
     set(state => {
@@ -37,7 +51,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
         lastStudiedAt: new Date().toISOString(),
       }
       const newRecords = { ...state.records, [lessonId]: updated }
-      storage.set('progress_records', newRecords)
+      storage.set(getChildKey('progress'), newRecords)
       return { records: newRecords }
     })
   },
@@ -57,7 +71,6 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
       const wrongQuestions = isCorrect
         ? existing.wrongQuestions.filter(id => id !== questionId)
         : [...new Set([...existing.wrongQuestions, questionId])]
-      // 正确率基于唯一错题数与总题目数的比例
       const totalSeen = Math.max(existing.wrongQuestions.length, wrongQuestions.length, 1)
       const wrongRate = wrongQuestions.length / Math.max(totalSeen, wrongQuestions.length + 1)
       const correctRate = Math.round((1 - wrongRate) * 100)
@@ -70,7 +83,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
         lastStudiedAt: new Date().toISOString(),
       }
       const newRecords = { ...state.records, [lessonId]: updated }
-      storage.set('progress_records', newRecords)
+      storage.set(getChildKey('progress'), newRecords)
       return { records: newRecords }
     })
   },
@@ -78,7 +91,7 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   saveExamRecord: (record: ExamRecord) => {
     set(state => {
       const newRecords = [...state.examRecords, record]
-      storage.set('exam_records', newRecords)
+      storage.set(getChildKey('exam'), newRecords)
       return { examRecords: newRecords }
     })
   },
@@ -112,8 +125,8 @@ export const useProgressStore = create<ProgressState>((set, get) => ({
   },
 
   resetProgress: () => {
-    storage.remove('progress_records')
-    storage.remove('exam_records')
+    storage.remove(getChildKey('progress'))
+    storage.remove(getChildKey('exam'))
     set({ records: {}, examRecords: [] })
   },
 }))
