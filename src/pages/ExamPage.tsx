@@ -20,7 +20,6 @@ export default function ExamPage() {
   const saveExamRecord = useProgressStore(s => s.saveExamRecord)
   const updatePracticeResult = useProgressStore(s => s.updatePracticeResult)
 
-  // 使用 ref 保存最新引用，避免闭包陈旧
   const answersRef = useRef(answers)
   answersRef.current = answers
   const currentQuestionsRef = useRef(currentQuestions)
@@ -61,7 +60,6 @@ export default function ExamPage() {
         timeSpent: 0,
       })),
     })
-    // 更新每课考试次数
     const lessonIds = new Set(latestQuestions.map(q => q.lessonId))
     lessonIds.forEach(lid => {
       updatePracticeResult(lid, '__exam__', true)
@@ -97,25 +95,73 @@ export default function ExamPage() {
     setQuizFinished(false)
   }
 
+  /* ─── 考前准备页 ─── */
   if (!examStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-50 to-pink-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-8 shadow-lg text-center max-w-md w-full">
-          <div className="text-6xl mb-4">📝</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{unit?.name || '单元测试'}</h2>
-          <div className="space-y-2 text-gray-500 mb-6">
-            <p>共 {unitQuestions.length} 道题目</p>
-            <p>总分 {unitQuestions.reduce((s, q) => s + q.points, 0)} 分</p>
-            <p>限时 30 分钟</p>
+      <div className="min-h-dvh flex items-center justify-center p-4 page-enter"
+        style={{ background: 'linear-gradient(160deg, var(--accent-50) 0%, var(--bg-base) 40%, var(--primary-50) 100%)' }}>
+        <div className="surface-card-elevated p-7 text-center max-w-md w-full scale-enter">
+          {/* 图标 */}
+          <div className="w-16 h-16 rounded-[18px] mx-auto mb-5 flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, var(--accent-100), var(--accent-200))' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-500)" strokeWidth="2" strokeLinecap="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6"/>
+              <path d="M16 13H8"/>
+              <path d="M16 17H8"/>
+              <path d="M10 9H8"/>
+            </svg>
           </div>
+          <h2 className="text-[22px] font-extrabold mb-1" style={{ color: 'var(--n-800)' }}>
+            {unit?.name || '单元测试'}
+          </h2>
+          <p className="text-[13px] mb-5" style={{ color: 'var(--n-400)' }}>
+            检验本单元的学习成果
+          </p>
+
+          {/* 考试信息 */}
+          <div className="rounded-[var(--r-lg)] p-4 mb-6 space-y-2.5"
+            style={{ background: 'var(--bg-subtle)' }}>
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="flex items-center gap-2" style={{ color: 'var(--n-500)' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="8" cy="8" r="6"/>
+                  <path d="M8 5v3l2 2"/>
+                </svg>
+                题目数量
+              </span>
+              <span className="font-bold" style={{ color: 'var(--n-700)' }}>{unitQuestions.length} 道</span>
+            </div>
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="flex items-center gap-2" style={{ color: 'var(--n-500)' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M13.5 2.5L7.5 8.5 M7.5 8.5L4 5 M7.5 8.5L5 11"/>
+                </svg>
+                总分
+              </span>
+              <span className="font-bold" style={{ color: 'var(--n-700)' }}>{unitQuestions.reduce((s, q) => s + q.points, 0)} 分</span>
+            </div>
+            <div className="flex items-center justify-between text-[13px]">
+              <span className="flex items-center gap-2" style={{ color: 'var(--n-500)' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <circle cx="8" cy="8" r="6.5"/>
+                  <path d="M8 4v4"/>
+                </svg>
+                限时
+              </span>
+              <span className="font-bold" style={{ color: 'var(--accent-500)' }}>30 分钟</span>
+            </div>
+          </div>
+
           <button
             onClick={handleStart}
             disabled={unitQuestions.length === 0}
-            className="w-full bg-red-500 text-white py-4 rounded-xl font-bold text-lg hover:bg-red-600 transition-colors disabled:bg-gray-300"
+            className="w-full py-3.5 rounded-[var(--r-md)] text-[16px] btn-primary btn-press disabled:opacity-40"
           >
             开始考试
           </button>
-          <button onClick={() => navigate('/kid')} className="mt-3 text-gray-500 hover:text-gray-700">
+          <button onClick={() => navigate('/kid')} className="mt-3 text-[13px] btn-press"
+            style={{ color: 'var(--n-400)' }}>
             ← 返回
           </button>
         </div>
@@ -123,6 +169,7 @@ export default function ExamPage() {
     )
   }
 
+  /* ─── 结果页 ─── */
   if (quizFinished) {
     const results = currentQuestions.map(q => ({
       question: q,
@@ -141,32 +188,61 @@ export default function ExamPage() {
     )
   }
 
+  /* ─── 答题中 ─── */
   const currentQ = currentQuestions[currentIndex]
   if (!currentQ) return null
 
+  const answeredCount = Object.keys(answers).length
+  const progressPercent = ((currentIndex + 1) / currentQuestions.length) * 100
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-50 to-pink-50">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-3">
+    <div className="min-h-dvh page-enter" style={{ background: 'var(--bg-base)' }}>
+      <header className="sticky top-0 z-20 border-b"
+        style={{ 
+          background: 'rgba(251, 248, 243, 0.92)',
+          backdropFilter: 'blur(16px) saturate(1.2)',
+          borderColor: 'var(--border-default)'
+        }}>
+        <div className="max-w-3xl mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-red-600">📝 {unit?.name}</span>
-            <span className={`text-sm font-mono font-bold ${timeLeft < 300 ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}>
-              ⏰ {formatTime(timeLeft)}
+            <span className="text-[13px] font-bold flex items-center gap-1.5" style={{ color: 'var(--accent-500)' }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <path d="M14 2v6h6"/>
+              </svg>
+              {unit?.name}
             </span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[var(--r-xs)]"
+              style={{ background: timeLeft < 300 ? 'var(--danger-50)' : 'var(--bg-muted)' }}>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" 
+                stroke={timeLeft < 300 ? 'var(--danger-500)' : 'var(--n-400)'} 
+                strokeWidth="2" strokeLinecap="round">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M8 4v4"/>
+              </svg>
+              <span className={`text-[13px] font-mono font-bold`}
+                style={{ color: timeLeft < 300 ? 'var(--danger-500)' : 'var(--n-600)' }}>
+                {formatTime(timeLeft)}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+          <div className="flex items-center justify-between text-[11px] mb-2" style={{ color: 'var(--n-400)' }}>
             <span>第 {currentIndex + 1} / {currentQuestions.length} 题</span>
-            <span>已答 {Object.keys(answers).length} 题</span>
+            <span>已答 {answeredCount} 题</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full h-[5px] rounded-full overflow-hidden" style={{ background: 'var(--n-200)' }}>
             <div
-              className="bg-red-500 h-2 rounded-full transition-all"
-              style={{ width: `${((currentIndex + 1) / currentQuestions.length) * 100}%` }}
+              className="h-full rounded-full progress-bar"
+              style={{ 
+                width: `${progressPercent}%`,
+                background: 'linear-gradient(90deg, var(--accent-400), var(--accent-500))'
+              }}
             />
           </div>
         </div>
       </header>
-      <main className="max-w-3xl mx-auto px-4 py-6">
+
+      <main className="max-w-3xl mx-auto px-4 py-5">
         <QuizQuestion
           question={currentQ}
           userAnswer={answers[currentQ.id] || ''}
@@ -174,38 +250,56 @@ export default function ExamPage() {
           showResult={false}
           showHint={false}
         />
-        <div className="flex flex-wrap gap-2 mt-4 justify-center">
-          {currentQuestions.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goToQuestion(i)}
-              className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
-                i === currentIndex
-                  ? 'bg-red-500 text-white'
-                  : answers[currentQuestions[i].id]
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+
+        {/* 题目导航网格 */}
+        <div className="mt-4 rounded-[var(--r-lg)] p-3 surface-card">
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {currentQuestions.map((_, i) => {
+              const isAnswered = !!answers[currentQuestions[i].id]
+              const isCurrent = i === currentIndex
+              return (
+                <button
+                  key={i}
+                  onClick={() => goToQuestion(i)}
+                  className="w-8 h-8 rounded-[var(--r-xs)] text-[11px] font-semibold btn-press transition-all"
+                  style={{
+                    background: isCurrent
+                      ? 'linear-gradient(135deg, var(--accent-500), var(--accent-400))'
+                      : isAnswered
+                        ? 'var(--success-100)'
+                        : 'var(--bg-muted)',
+                    color: isCurrent
+                      ? 'white'
+                      : isAnswered
+                        ? 'var(--success-700)'
+                        : 'var(--n-400)',
+                    boxShadow: isCurrent ? '0 2px 8px rgba(236, 72, 153, 0.3)' : 'none'
+                  }}
+                >
+                  {i + 1}
+                </button>
+              )
+            })}
+          </div>
         </div>
-        <div className="flex gap-3 mt-6">
+
+        <div className="flex gap-3 mt-4">
           <button
             onClick={prevQuestion}
             disabled={currentIndex === 0}
-            className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 disabled:opacity-30"
+            className="flex-1 py-3 rounded-[var(--r-md)] text-[14px] font-medium btn-press btn-ghost disabled:opacity-30"
           >
             ← 上一题
           </button>
           {currentIndex < currentQuestions.length - 1 ? (
-            <button onClick={nextQuestion} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium hover:bg-red-600">
+            <button onClick={nextQuestion} className="flex-1 py-3 rounded-[var(--r-md)] text-[14px] btn-primary btn-press">
               下一题 →
             </button>
           ) : (
-            <button onClick={handleFinish} className="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600">
-              ✅ 交卷
+            <button onClick={handleFinish} 
+              className="flex-1 py-3 rounded-[var(--r-md)] text-[14px] font-bold text-white btn-press"
+              style={{ background: 'linear-gradient(135deg, var(--success-500), var(--success-400))', boxShadow: 'var(--shadow-sm), 0 4px 16px rgba(34, 197, 94, 0.25)' }}>
+              交卷
             </button>
           )}
         </div>

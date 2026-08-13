@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import KidHome from './pages/KidHome'
 import StudyPage from './pages/StudyPage'
@@ -9,7 +9,7 @@ import ParentDetail from './pages/ParentDetail'
 
 function App() {
   return (
-    <BrowserRouter basename="/11">
+    <HashRouter>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/kid" element={<KidHome />} />
@@ -19,7 +19,7 @@ function App() {
         <Route path="/parent" element={<ParentHome />} />
         <Route path="/parent/detail/:lessonId" element={<ParentDetail />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 

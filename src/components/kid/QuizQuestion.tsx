@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Question } from '../../types'
 
 interface QuizQuestionProps {
@@ -6,7 +6,9 @@ interface QuizQuestionProps {
   userAnswer: string
   onAnswer: (answer: string) => void
   showResult: boolean
+  isCorrect?: boolean
   showHint: boolean
+  disabled?: boolean
 }
 
 const typeLabels: Record<string, string> = {
@@ -21,69 +23,58 @@ const typeLabels: Record<string, string> = {
   match: '连线匹配',
 }
 
-function isAnswerCorrect(question: Question, userAnswer: string): boolean {
-  if (!userAnswer.trim()) return false
-  const normalized = userAnswer.trim()
-
-  if (typeof question.answer === 'object' && !Array.isArray(question.answer) && question.answer !== null) {
-    const answerObj = question.answer as Record<string, string>
-    const keys = Object.keys(answerObj)
-    return keys.every(key => normalized.includes(key) && normalized.includes(answerObj[key]))
-  }
-  if (Array.isArray(question.answer)) {
-    if (question.type === 'word_form') {
-      return question.answer.some(a => normalized.includes(a.trim()))
-    }
-    return question.answer.every(a => normalized.includes(a.trim()))
-  }
-  if (typeof question.answer === 'string') {
-    return normalized === question.answer || normalized.includes(question.answer) || question.answer.includes(normalized)
-  }
-  return false
-}
-
 export default function QuizQuestion({
-  question,
-  userAnswer,
-  onAnswer,
-  showResult,
-  showHint,
+  question, userAnswer, onAnswer, showResult, isCorrect, showHint, disabled,
 }: QuizQuestionProps) {
   const [inputValue, setInputValue] = useState(userAnswer)
-  const isCorrect = showResult && isAnswerCorrect(question, inputValue)
+
+  useEffect(() => {
+    setInputValue(userAnswer)
+  }, [userAnswer, question.id])
 
   const handleInputChange = (val: string) => {
+    if (disabled) return
     setInputValue(val)
     onAnswer(val)
   }
 
+  const inputBaseStyle = `w-full px-4 py-3 text-[15px] border-2 rounded-[var(--r-md)] outline-none transition-colors`
+
   const renderQuestion = () => {
     switch (question.type) {
       case 'match': {
-        // 连线匹配题：用 "左-右" 格式输入
         const answerObj = typeof question.answer === 'object' && !Array.isArray(question.answer)
           ? question.answer as Record<string, string>
           : {}
         const pairs = Object.entries(answerObj)
         return (
-          <div className="space-y-4">
-            <p className="text-lg text-gray-800">{question.prompt}</p>
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="text-center text-sm font-medium text-gray-500">左侧</div>
-              <div className="text-center text-sm font-medium text-gray-500">右侧</div>
+          <div className="space-y-3">
+            <p className="text-[15px] font-medium" style={{ color: 'var(--n-700)' }}>
+              {question.prompt}
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-1">
+              <div className="text-center text-[11px] font-medium px-2 py-1 rounded-[var(--r-xs)]"
+                style={{ background: 'var(--bg-muted)', color: 'var(--n-400)' }}>
+                左侧
+              </div>
+              <div className="text-center text-[11px] font-medium px-2 py-1 rounded-[var(--r-xs)]"
+                style={{ background: 'var(--bg-muted)', color: 'var(--n-400)' }}>
+                右侧
+              </div>
             </div>
             {question.options?.map((left, i) => (
               <div key={i} className="grid grid-cols-2 gap-2 items-center">
-                <span className="text-center bg-gray-100 rounded-lg py-2 font-medium text-gray-700">{left}</span>
+                <div className="text-center py-2.5 rounded-[var(--r-sm)] font-medium text-[13px]"
+                  style={{ background: 'var(--bg-muted)', color: 'var(--n-600)' }}>
+                  {left}
+                </div>
                 <select
                   value=""
                   onChange={e => {
                     const right = e.target.value
                     const newPair = `${left}-${right}`
-                    // 替换或追加
                     let newVal = inputValue
                     if (newVal.includes(left)) {
-                      // 简单处理：重新构建
                       const existingPairs = newVal.split(';').filter(p => !p.startsWith(left))
                       existingPairs.push(newPair)
                       newVal = existingPairs.join(';')
@@ -92,8 +83,12 @@ export default function QuizQuestion({
                     }
                     handleInputChange(newVal)
                   }}
-                  disabled={showResult}
-                  className="border-2 border-gray-200 rounded-lg py-2 px-3 text-sm focus:border-indigo-400 outline-none"
+                  disabled={disabled}
+                  className="border-2 rounded-[var(--r-sm)] py-2.5 px-3 text-[13px] outline-none"
+                  style={{ 
+                    borderColor: 'var(--border-default)',
+                    background: disabled ? 'var(--bg-muted)' : 'var(--bg-card)'
+                  }}
                 >
                   <option value="">请选择...</option>
                   {pairs.map(([, right]) => (
@@ -102,16 +97,6 @@ export default function QuizQuestion({
                 </select>
               </div>
             ))}
-            {!question.options?.length && (
-              <input
-                type="text"
-                value={inputValue}
-                onChange={e => handleInputChange(e.target.value)}
-                placeholder="格式：左-右, 左-右..."
-                disabled={showResult}
-                className="w-full px-4 py-3 text-lg border-2 rounded-xl outline-none transition-colors border-gray-200 focus:border-indigo-400"
-              />
-            )}
           </div>
         )
       }
@@ -120,19 +105,24 @@ export default function QuizQuestion({
       case 'word_form':
       case 'antonym':
         return (
-          <div className="space-y-4">
-            <p className="text-lg text-gray-800">{question.prompt}</p>
+          <div className="space-y-3">
+            <p className="text-[15px] font-medium leading-relaxed" style={{ color: 'var(--n-700)' }}>
+              {question.prompt}
+            </p>
             <input
               type="text"
               value={inputValue}
               onChange={e => handleInputChange(e.target.value)}
-              placeholder="请输入答案..."
-              disabled={showResult}
-              className={`w-full px-4 py-3 text-lg border-2 rounded-xl outline-none transition-colors
-                ${showResult
-                  ? isCorrect ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50'
-                  : 'border-gray-200 focus:border-indigo-400'
-                }`}
+              placeholder="请输入你的答案..."
+              disabled={disabled}
+              className={inputBaseStyle}
+              style={{ 
+                borderColor: showResult 
+                  ? isCorrect ? 'var(--success-400)' : 'var(--warning-400)' 
+                  : 'var(--border-default)',
+                background: disabled ? 'var(--bg-muted)' : 'var(--bg-card)',
+                boxShadow: showResult ? 'none' : '0 1px 3px rgba(0,0,0,0.04)'
+              }}
             />
           </div>
         )
@@ -141,28 +131,56 @@ export default function QuizQuestion({
       case 'reading_choice':
       case 'character_pinyin':
         return (
-          <div className="space-y-4">
-            <p className="text-lg text-gray-800">{question.prompt}</p>
+          <div className="space-y-3">
+            <p className="text-[15px] font-medium leading-relaxed" style={{ color: 'var(--n-700)' }}>
+              {question.prompt}
+            </p>
             <div className="space-y-2">
               {question.options?.map((option, i) => {
                 const isSelected = inputValue === option || inputValue.includes(option)
-                const isThisCorrect = question.answer === option ||
+                const isThisCorrect = showResult && (
+                  question.answer === option ||
                   (Array.isArray(question.answer) && question.answer.includes(option))
+                )
+                const isThisWrong = showResult && isSelected && !isThisCorrect
                 return (
                   <button
                     key={i}
-                    onClick={() => !showResult && handleInputChange(option)}
-                    disabled={showResult}
-                    className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all
-                      ${showResult
-                        ? isThisCorrect ? 'border-green-400 bg-green-50 text-green-800'
-                          : isSelected ? 'border-red-400 bg-red-50 text-red-800'
-                          : 'border-gray-100 bg-gray-50 text-gray-400'
-                        : isSelected ? 'border-indigo-400 bg-indigo-50 text-indigo-800'
-                          : 'border-gray-200 hover:border-indigo-200 hover:bg-indigo-50'
-                      }`}
+                    onClick={() => !disabled && handleInputChange(option)}
+                    disabled={disabled}
+                    className="w-full text-left px-4 py-3 rounded-[var(--r-md)] border-2 transition-all text-[14px] font-medium btn-press"
+                    style={{ 
+                      background: showResult
+                        ? isThisCorrect ? 'var(--success-50)' 
+                          : isThisWrong ? 'var(--warning-50)'
+                          : 'var(--bg-muted)'
+                        : isSelected ? 'var(--info-50)' : 'var(--bg-muted)',
+                      borderColor: showResult
+                        ? isThisCorrect ? 'var(--success-400)' 
+                          : isThisWrong ? 'var(--warning-400)'
+                          : 'transparent'
+                        : isSelected ? 'var(--info-400)' : 'transparent',
+                      color: showResult
+                        ? isThisCorrect ? 'var(--success-700)' 
+                          : isThisWrong ? 'var(--warning-600)'
+                          : 'var(--n-500)'
+                        : isSelected ? 'var(--info-600)' : 'var(--n-600)'
+                    }}
                   >
-                    {option}
+                    <span className="inline-flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold"
+                        style={{ 
+                          background: isSelected 
+                            ? showResult 
+                              ? isThisCorrect ? 'var(--success-400)' : 'var(--warning-400)'
+                              : 'var(--info-400)'
+                            : 'var(--n-200)',
+                          color: isSelected ? 'white' : 'var(--n-400)'
+                        }}>
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      {option}
+                    </span>
                   </button>
                 )
               })}
@@ -171,15 +189,21 @@ export default function QuizQuestion({
         )
       default:
         return (
-          <div className="space-y-4">
-            <p className="text-lg text-gray-800">{question.prompt}</p>
+          <div className="space-y-3">
+            <p className="text-[15px] font-medium" style={{ color: 'var(--n-700)' }}>
+              {question.prompt}
+            </p>
             <input
               type="text"
               value={inputValue}
               onChange={e => handleInputChange(e.target.value)}
-              placeholder="请输入答案..."
-              disabled={showResult}
-              className="w-full px-4 py-3 text-lg border-2 border-gray-200 rounded-xl outline-none focus:border-indigo-400"
+              placeholder="请输入你的答案..."
+              disabled={disabled}
+              className={inputBaseStyle}
+              style={{ 
+                borderColor: 'var(--border-default)',
+                background: disabled ? 'var(--bg-muted)' : 'var(--bg-card)'
+              }}
             />
           </div>
         )
@@ -187,40 +211,28 @@ export default function QuizQuestion({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <div className="surface-card p-5">
+      {/* 题目类型标签 */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-medium">
+        <span className="px-2.5 py-1 rounded-[var(--r-xs)] text-[11px] font-semibold"
+          style={{ background: 'var(--info-50)', color: 'var(--info-600)' }}>
           {typeLabels[question.type] || '其他'}
         </span>
-        <span className="text-xs text-gray-400">{question.points}分</span>
+        <span className="text-[11px]" style={{ color: 'var(--n-300)' }}>
+          {question.points}分
+        </span>
       </div>
+      
+      {/* 题目内容 */}
       {renderQuestion()}
-      {showHint && question.hint && !showResult && (
-        <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-          <span className="text-yellow-700 text-sm">💡 提示：{question.hint}</span>
-        </div>
-      )}
-      {showResult && (
-        <div className={`mt-4 rounded-xl p-4 ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-          {isCorrect ? (
-            <p className="text-green-700 font-medium">✅ 回答正确！太棒了！</p>
-          ) : (
-            <div>
-              <p className="text-red-700 font-medium mb-1">❌ 回答错误</p>
-              <p className="text-gray-600 text-sm">
-                正确答案：<span className="font-bold text-green-700">
-                  {typeof question.answer === 'object' && !Array.isArray(question.answer)
-                    ? Object.entries(question.answer).map(([k, v]) => `${k}→${v}`).join('；')
-                    : Array.isArray(question.answer)
-                      ? question.answer.join('、')
-                      : String(question.answer)}
-                </span>
-              </p>
-              {question.explanation && (
-                <p className="text-gray-500 text-sm mt-2">📖 {question.explanation}</p>
-              )}
-            </div>
-          )}
+      
+      {/* 提示 */}
+      {showHint && question.hint && showResult && !isCorrect && (
+        <div className="mt-4 rounded-[var(--r-sm)] p-3"
+          style={{ background: 'var(--warning-50)', border: '1px solid var(--warning-100)' }}>
+          <span className="text-[12px]" style={{ color: 'var(--warning-600)' }}>
+            提示：{question.hint}
+          </span>
         </div>
       )}
     </div>
