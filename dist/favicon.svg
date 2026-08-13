@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="20" fill="#4F46E5"/>
+  <rect x="20" y="20" width="60" height="60" rx="10" fill="white" opacity="0.95"/>
+  <text x="50" y="62" text-anchor="middle" font-size="36" font-weight="bold" fill="#4F46E5" font-family="sans-serif">语</text>
+</svg>
