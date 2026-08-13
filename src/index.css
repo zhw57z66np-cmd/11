@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #4F46E5;
+  --color-secondary: #F59E0B;
+  --color-success: #10B981;
+  --color-danger: #EF4444;
+  --color-kid-bg: #FEF3C7;
+  --color-parent-bg: #EEF2FF;
+}
+
+body {
+  font-family: 'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.animate-confetti-fall {
+  animation: confetti-fall 2s ease-in forwards;
+}
